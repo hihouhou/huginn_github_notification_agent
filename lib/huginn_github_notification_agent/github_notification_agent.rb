@@ -11,6 +11,8 @@ module Agents
 
       `mark_as_read` is used to post request for mark as read notification.
 
+      `add_release_details` is used when it's a notification release, it fetches tag_name/tarball_url/html_url.
+
       `expected_receive_period_in_days` is used to determine if the Agent is working. Set it to the maximum number of days
       that you anticipate passing without this Agent receiving an incoming Event.
       MD
@@ -38,13 +40,15 @@ module Agents
         'username' => '',
         'expected_receive_period_in_days' => '2',
         'token' => '',
-        'mark_as_read' => 'true'
+        'mark_as_read' => 'true',
+        'add_release_details' => 'true'
       }
     end
 
     form_configurable :username, type: :string
     form_configurable :token, type: :string
     form_configurable :mark_as_read, type: :boolean
+    form_configurable :add_release_details, type: :boolean
     form_configurable :expected_receive_period_in_days, type: :string
 
     def validate_options
@@ -54,6 +58,10 @@ module Agents
 
       unless options['token'].present?
         errors.add(:base, "token is a required field")
+      end
+
+      if options.has_key?('add_release_details') && boolify(options['add_release_details']).nil?
+        errors.add(:base, "if provided, add_release_details must be true or false")
       end
 
       if options.has_key?('mark_as_read') && boolify(options['mark_as_read']).nil?
@@ -119,6 +127,26 @@ module Agents
       notification_json.each do |notif|
         if interpolated[:mark_as_read] == "true"
             mark_read(notif['repository']['full_name'])
+        end
+        if interpolated[:add_release_details] == "true" && notif['subject']['type'] == "Release"
+            uri_bis = URI.parse(notif['subject']['url'])
+            request_bis = Net::HTTP::Get.new(uri_bis)
+            request_bis.basic_auth("#{interpolated[:username]}", "#{interpolated[:token]}")
+          
+            req_options_bis = {
+              use_ssl: uri.scheme == "https",
+            }
+          
+            response_bis = Net::HTTP.start(uri_bis.hostname, uri_bis.port, req_options_bis) do |http|
+              http.request(request_bis)
+            end
+          
+            log "fetch details request status for #{notif['repository']['full_name']} : #{response_bis.code}"
+          
+            details_json = JSON.parse(response_bis.body)
+            notif.merge!({ :tag_name => details_json['tag_name']})
+            notif.merge!({ :tarball_url => details_json['tarball_url']})
+            notif.merge!({ :html_url => details_json['html_url']})
         end
         create_event payload: notif
       end
