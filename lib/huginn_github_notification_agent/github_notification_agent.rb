@@ -11,6 +11,8 @@ module Agents
 
       `mark_as_read` is used to post request for mark as read notification.
 
+      `regex_filter_tag` is used to filter notification with tagname ( for example no beta/alpha).
+
       `add_release_details` is used when it's a notification release, it fetches tag_name/tarball_url/html_url.
 
       `expected_receive_period_in_days` is used to determine if the Agent is working. Set it to the maximum number of days
@@ -40,6 +42,7 @@ module Agents
         'username' => '',
         'expected_receive_period_in_days' => '2',
         'token' => '',
+        'regex_filter_tag' => '',
         'mark_as_read' => 'true',
         'add_release_details' => 'true'
       }
@@ -47,6 +50,7 @@ module Agents
 
     form_configurable :username, type: :string
     form_configurable :token, type: :string
+    form_configurable :regex_filter_tag, type: :string
     form_configurable :mark_as_read, type: :boolean
     form_configurable :add_release_details, type: :boolean
     form_configurable :expected_receive_period_in_days, type: :string
@@ -144,11 +148,22 @@ module Agents
             log "fetch details request status for #{notif['repository']['full_name']} : #{response_bis.code}"
           
             details_json = JSON.parse(response_bis.body)
-            notif.merge!({ :tag_name => details_json['tag_name']})
+            notif.merge!({ :tagname => details_json['tag_name']})
             notif.merge!({ :tarball_url => details_json['tarball_url']})
-            notif.merge!({ :html_url => details_json['html_url']})
+            notif.merge!({ :changelog => details_json['html_url']})
         end
-        create_event payload: notif
+        if defined?(interpolated[:regex_filter_tag]) && (interpolated[:regex_filter_tag] != '')
+            result = /#{interpolated[:regex_filter_tag]}/.match(details_json['tag_name'])
+            log "regex filter enabled"
+            if (result)
+              then
+                    create_event payload: notif
+              else
+                    log "matched by regex filter"
+            end
+        else
+            create_event payload: notif
+        end
       end
     end    
   end
