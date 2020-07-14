@@ -152,7 +152,7 @@ module Agents
             notif.merge!({ :tarball_url => details_json['tarball_url']})
             notif.merge!({ :changelog => details_json['html_url']})
         end
-        if defined?(interpolated[:regex_filter_tag]) && (interpolated[:regex_filter_tag] != '')
+        if defined?(interpolated[:regex_filter_tag]) && (interpolated[:regex_filter_tag] != '') && notif['subject']['type'] == "Release"
             result = /#{interpolated[:regex_filter_tag]}/.match(details_json['tag_name'])
             log "regex filter enabled"
             if (result)
