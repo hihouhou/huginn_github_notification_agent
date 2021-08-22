@@ -22,19 +22,20 @@ module Agents
 
     event_description <<-MD
       Events look like this:
-        {
-          "id": "xxxxx",
-          "unread": true,
-          "reason": "subscribed",
-          "updated_at": "2020-06-27T14:44:56Z",
-          "last_read_at": "2020-06-28T00:32:34Z",
-          "subject": {
-            "title": "xxxxxx",
-            ...
-            },
-          "url": "https://api.github.com/notifications/threads/xxxxxx",
-          "subscription_url": "https://api.github.com/notifications/threads/xxxxxx/subscription"
-        }
+
+          {
+            "id": "xxxxx",
+            "unread": true,
+            "reason": "subscribed",
+            "updated_at": "2020-06-27T14:44:56Z",
+            "last_read_at": "2020-06-28T00:32:34Z",
+            "subject": {
+              "title": "xxxxxx",
+              ...
+              },
+            "url": "https://api.github.com/notifications/threads/xxxxxx",
+            "subscription_url": "https://api.github.com/notifications/threads/xxxxxx/subscription"
+          }
     MD
 
     def default_options
